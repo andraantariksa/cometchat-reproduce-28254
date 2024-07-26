@@ -32,12 +32,19 @@ class Application : Application() {
         val LISTENER_ID = System.currentTimeMillis().toString() + ""
         CometChat.addCallListener(LISTENER_ID, object : CometChat.CallListener() {
             override fun onIncomingCallReceived(call: Call) {
+                println("@@@ onIncomingCallReceived")
                 CometChatCallActivity.launchIncomingCallScreen(applicationContext, call, null)
             }
 
-            override fun onOutgoingCallAccepted(call: Call?) {}
-            override fun onOutgoingCallRejected(call: Call?) {}
-            override fun onIncomingCallCancelled(call: Call?) {}
+            override fun onOutgoingCallAccepted(call: Call?) {
+                println("@@@ onOutgoingCallAccepted")
+            }
+            override fun onOutgoingCallRejected(call: Call?) {
+                println("@@@ onOutgoingCallRejected")
+            }
+            override fun onIncomingCallCancelled(call: Call?) {
+                println("@@@ onIncomingCallCancelled")
+            }
         })
     }
 

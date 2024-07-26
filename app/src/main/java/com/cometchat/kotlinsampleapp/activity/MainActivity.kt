@@ -1,9 +1,12 @@
 package com.cometchat.kotlinsampleapp.activity
 
+import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Bundle
+import android.util.Log
 import android.view.View
+import android.view.WindowManager.BadTokenException
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -14,12 +17,28 @@ import androidx.appcompat.widget.AppCompatImageView
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
+import com.cometchat.calls.core.CallAppSettings.CallAppSettingBuilder
+import com.cometchat.calls.core.CometChatCalls
+import com.cometchat.chat.constants.CometChatConstants
+import com.cometchat.chat.core.Call
 import com.cometchat.chat.core.CometChat
+import com.cometchat.chat.core.CometChat.CallbackListener
 import com.cometchat.chat.exceptions.CometChatException
+import com.cometchat.chat.models.BaseMessage
+import com.cometchat.chat.models.Group
 import com.cometchat.chat.models.User
+import com.cometchat.chatuikit.calls.CallingExtension
+import com.cometchat.chatuikit.calls.CallingExtensionDecorator
+import com.cometchat.chatuikit.calls.CometChatCallActivity
+import com.cometchat.chatuikit.calls.callbutton.CometChatCallButtons
 import com.cometchat.chatuikit.shared.cometchatuikit.CometChatUIKit
 import com.cometchat.chatuikit.shared.cometchatuikit.UIKitSettings.UIKitSettingsBuilder
+import com.cometchat.chatuikit.shared.framework.ChatConfigurator
+import com.cometchat.chatuikit.shared.framework.DataSource
+import com.cometchat.chatuikit.shared.models.CometChatMessageOption
+import com.cometchat.chatuikit.shared.resources.theme.CometChatTheme
 import com.cometchat.chatuikit.shared.resources.utils.Utils
+import com.cometchat.chatuikit.shared.views.button.ButtonStyle
 import com.cometchat.kotlinsampleapp.AppConstants
 import com.cometchat.kotlinsampleapp.AppUtils
 import com.cometchat.kotlinsampleapp.AppUtils.Companion.fetchDefaultObjects
@@ -52,9 +71,126 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val callAppSettings = CallAppSettingBuilder()
+            .setAppId(AppConstants.APP_ID)
+            .setRegion(AppConstants.REGION)
+            .build()
+        CometChatCalls.init(
+            this,
+            callAppSettings,
+            object : CometChatCalls.CallbackListener<String>() {
+                override fun onSuccess(successMessage: String) {
+                    // The code below was created for workaround
+                    // The actual library HAS NO SUPPORT for group call
+                    return ChatConfigurator.enable { dataSource: DataSource? ->
+                        object : CallingExtensionDecorator(
+                            dataSource,
+                        ) {
+                            fun initiateCall(group: Group?) {
+                                if (group == null) {
+                                    // Don't care about non group call, just throw an error
+                                    TODO()
+                                }
+
+                                if (CometChat.getActiveCall() != null || CallingExtension.getActiveCall() != null) {
+                                    return
+                                }
+
+                                val call = Call(group.guid, CometChatConstants.RECEIVER_TYPE_GROUP, CometChatConstants.CALL_TYPE_AUDIO)
+                                val jsonObject = JSONObject()
+                                try {
+                                    jsonObject.put("bookingId", 6)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                                call.metadata = jsonObject
+
+                                CometChat.initiateCall(call, object : CallbackListener<Call>() {
+                                    override fun onSuccess(call: Call) {
+                                        if (call.callReceiver is Group) {
+                                            CometChatCallActivity.launchConferenceCallScreen(
+                                                this@MainActivity,
+                                                call,
+                                                null,
+                                            )
+                                        }
+                                    }
+
+                                    override fun onError(e: CometChatException) {
+                                        // Dont care
+                                    }
+                                })
+                            }
+
+                            override fun getCommonOptions(
+                                context: Context?,
+                                baseMessage: BaseMessage?,
+                                group: Group?
+                            ): MutableList<CometChatMessageOption> {
+                                val options = super.getCommonOptions(context, baseMessage, group)
+                                return options.filter { it.id !in setOf("message_privately", "share", "reply_in_thread", "delete", "message_information", "edit") }.toMutableList()
+                            }
+
+                            override fun getMessageOptions(
+                                context: Context?,
+                                baseMessage: BaseMessage?,
+                                group: Group?
+                            ): MutableList<CometChatMessageOption> {
+                                val options = super.getTextMessageOptions(context, baseMessage, group)
+                                return options.filter { it.id !in setOf("message_privately", "share", "reply_in_thread", "delete", "message_information", "edit") }.toMutableList()
+                            }
+
+                            override fun getAuxiliaryHeaderMenu(
+                                context: Context,
+                                user: User?,
+                                group: Group?
+                            ): View {
+                                val presentView = super.getAuxiliaryHeaderMenu(context, user, group)
+                                val linearLayout = presentView as LinearLayout
+                                linearLayout.removeViewAt(0)
+
+                                val callButtons = object : CometChatCallButtons(context) {}.apply {
+                                    videoCallButton.hideButtonBackground(true)
+                                    voiceCallButton.hideButtonBackground(true)
+                                    setVideoCallIcon(com.cometchat.chatuikit.R.drawable.cometchat_video_icon)
+                                    setVoiceCallIcon(com.cometchat.chatuikit.R.drawable.cometchat_call_icon)
+                                    hideButtonText(true)
+                                    setMarginForButtons(
+                                        Utils.convertDpToPx(
+                                            context,
+                                            1
+                                        )
+                                    )
+                                    setButtonStyle(
+                                        ButtonStyle().setButtonIconTint(
+                                            CometChatTheme.getInstance().palette.getPrimary(context)
+                                        )
+                                    )
+                                    hideVoiceCall(false)
+                                    hideVideoCall(true)
+
+                                    findViewById<View>(com.cometchat.chatuikit.R.id.voice_call).setOnClickListener {
+                                        initiateCall(group)
+                                    }
+                                }
+                                linearLayout.addView(callButtons, 0)
+
+                                return linearLayout
+                            }
+                        }
+                    }
+                }
+
+                override fun onError(error: com.cometchat.calls.exceptions.CometChatException) {
+                    // Dont care
+                }
+            }
+        )
+
         val uiKitSettings =
             UIKitSettingsBuilder().setRegion(AppConstants.REGION).setAppId(AppConstants.APP_ID)
-                .setAuthKey(AppConstants.AUTH_KEY).subscribePresenceForAllUsers().build()
+                .subscribePresenceForAllUsers().build()
         CometChatUIKit.init(this, uiKitSettings, object : CometChat.CallbackListener<String?>() {
             override fun onSuccess(s: String?) {
                 CometChat.setDemoMetaInfo(appMetadata)

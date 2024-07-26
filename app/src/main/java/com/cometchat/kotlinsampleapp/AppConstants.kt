@@ -2,10 +2,10 @@ package com.cometchat.kotlinsampleapp
 
 object AppConstants {
 
-    const val APP_ID = "XXXXXXXXXXXXXXXXXX"
+    const val APP_ID = "240025ca1c91e287"
 
-    const val AUTH_KEY = "XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+    const val USER_AUTH_KEY = "XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-    const val REGION = "XX"
+    const val REGION = "us"
 
 }

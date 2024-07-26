@@ -43,7 +43,7 @@
             android:layout_marginStart="16dp"
             android:fontFamily="sans-serif"
             android:padding="4dp"
-            android:text="Kindly, enter UID \nto proceed"
+            android:text="Kindly, enter auth token \nto proceed"
             android:textColor="@color/cometchat_primary_text_color"
             android:textSize="20sp"
             android:textStyle="bold" />
@@ -61,7 +61,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/app_background"
-                android:hint="Enter UID"
+                android:hint="Enter Auth Token"
                 app:boxBackgroundMode="filled"
                 app:boxCornerRadiusBottomEnd="16dp"
                 app:boxCornerRadiusBottomStart="16dp"

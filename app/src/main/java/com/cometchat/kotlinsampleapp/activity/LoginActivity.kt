@@ -1,7 +1,6 @@
 package com.cometchat.kotlinsampleapp.activity
 
 import android.content.Intent
-import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.View
@@ -16,6 +15,7 @@ import com.cometchat.chat.core.CometChat
 import com.cometchat.chat.exceptions.CometChatException
 import com.cometchat.chat.models.User
 import com.cometchat.chatuikit.shared.cometchatuikit.CometChatUIKit
+import com.cometchat.kotlinsampleapp.AppConstants
 import com.cometchat.kotlinsampleapp.AppUtils.Companion.changeTextColorToBlack
 import com.cometchat.kotlinsampleapp.AppUtils.Companion.changeTextColorToWhite
 import com.cometchat.kotlinsampleapp.AppUtils.Companion.fetchDefaultObjects
@@ -65,7 +65,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun login(uid: String) {
-        CometChatUIKit.login(uid, object : CometChat.CallbackListener<User?>() {
+        CometChatUIKit.loginWithAuthToken(uid, object : CometChat.CallbackListener<User?>() {
             override fun onSuccess(user: User?) {
                 startActivity(Intent(this@LoginActivity, HomeActivity::class.java))
                 fetchDefaultObjects()
